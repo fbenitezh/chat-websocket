@@ -1,0 +1,160 @@
+
+<div class="container jumbotrom">
+    <h2>Ingrese Producto</h2>
+    <form onsubmit="handleSubmit(event)" class="form-group">
+        <div class="row">
+            <div class="col-12 col-md-6 my-2">
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <div class="input-group-text">Producto</div>
+                    </div>
+                    <input type="text" name="name" id="name" class="form-control" placeholder="Nombre del producto">
+                </div> 
+            </div>
+            <div class="col-12 col-md-6 my-2">
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <div class="input-group-text">Precio</div>
+                    </div>
+                    <input type="number" step="any" name="price" id="price" class="form-control" placeholder="Precio del producto">
+                </div> 
+            </div>
+            <div class="col-12 my-2">
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <div class="input-group-text">Foto URL</div>
+                    </div>
+                    <input type="text" name="photo" id="photo" class="form-control" placeholder="URL">
+                </div> 
+            </div>
+            <div class="col-12 text-center my-2">
+                <input type="submit" class="btn btn-primary" value="Guardar producto"/>
+            </div>
+        </div>
+    </form>
+</div>
+<hr/>
+<div class="container pt-4">
+  <h2>Productos cargados</h2>
+
+    <div class="row">
+        <table class="table col-12">
+            <thead>
+                <tr class="text-center">
+                    <th scope="col">Nombre</th>
+                    <th scope="col">Precio</th>
+                    <th scope="col">Foto</th>
+                </tr>
+            </thead>
+            <tbody id="bodyTable">
+                
+            </tbody>
+        </table>
+        <div class="col-12 d-none" id="alerta">
+            <div class="alert alert-warning text-center">No se encontraron productos</div>
+        </div>
+    </div>
+
+</div>
+
+<hr/>
+<div class="container pt-4">
+    <h2>Chat</h2>
+    <div class="chat">
+        <div id="messages">
+            
+            
+        </div>
+        <form id="inputs" class="form-group" onsubmit="handleSubmitChat(event)">
+            <div class="row">
+                <div class="col-12 col-md-3 mt-2">
+                    <input type="email" class="form-control" name="email" id="email" placeholder="Ingrese su email" required>
+                </div>
+                <div class="col-12 col-md-7 mt-2">
+                    <input type="text" class="form-control" name="message" id="message" placeholder="Mensaje">
+                </div>
+                <div class="col-12 col-md-2 mt-2">
+                    <button type="submit" class="btn btn-success w-100">Enviar</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const socket = io();
+
+    const handleSubmit = async event=>{
+        event.preventDefault();
+        socket.emit('nuevoProducto',{
+            name:document.getElementById('name').value,
+            price:document.getElementById('price').value,
+            photo:document.getElementById('photo').value
+        });
+        document.getElementById('name').value = "";
+        document.getElementById('price').value = "";
+        document.getElementById('photo').value = "";
+    }
+
+    const handleSubmitChat = async e=>{
+        e.preventDefault();
+        if(document.getElementById('message').value == "") return false;
+        socket.emit('messageFront',{
+            email:document.getElementById('email').value,
+            message:document.getElementById('message').value
+        });
+        document.getElementById('message').value = "";
+    }
+
+    const actualizarTabla = async () =>{
+        const res = await fetch('/productos.json');
+        let productos = await res.text();
+        if(productos==""){
+            document.getElementById('alerta').classList.remove('d-none');
+            document.getElementsByTagName('table')[0].classList.add('d-none');
+            return;
+        }
+        productos = JSON.parse(productos);
+        let template = '';
+        productos.forEach(producto => {
+            template += `<tr class="text-center">
+                <th scope="row">${producto.name}</th>
+                <td>${producto.price}</td>
+                <td><img src="${producto.thumbnail}" width="35px" alt="${producto.name}" /></td>
+            </tr>`;
+        });
+        document.getElementById('bodyTable').innerHTML = template;
+        document.getElementById('alerta').classList.add('d-none');
+        document.getElementsByTagName('table')[0].classList.remove('d-none');
+    }
+
+    const actualizarChat = mensajes =>{
+        let template = "";
+        mensajes.map(mensaje=>{
+            template += `
+            <div class="mensaje d-flex align-items-center my-2">
+                <span class="email">${mensaje.email}</span>
+                 <span class="time">${mensaje.date}:</span>
+                <p class="my-0 mx-2">${mensaje.message}</p>
+            </div>`;
+        });
+        document.getElementById('messages').innerHTML = template;
+    }
+
+    //evento de conexion principal
+    socket.on('connectionMessage',data=>{
+        actualizarTabla();
+    });
+
+    //evento para actualizar la tabla de productos
+    socket.on('updateProducto',()=>{
+        actualizarTabla();
+    });
+
+    //evento para actualizar los mensajes del chat
+    socket.on('messageBack',mensajes=>{
+        console.log('messageBack');
+        actualizarChat(mensajes);
+    });
+
+</script>
