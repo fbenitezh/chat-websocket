@@ -106,15 +106,7 @@
         document.getElementById('message').value = "";
     }
 
-    const actualizarTabla = async () =>{
-        const res = await fetch('/productos.json');
-        let productos = await res.text();
-        if(productos==""){
-            document.getElementById('alerta').classList.remove('d-none');
-            document.getElementsByTagName('table')[0].classList.add('d-none');
-            return;
-        }
-        productos = JSON.parse(productos);
+    const actualizarTabla =  (productos) =>{
         let template = '';
         productos.forEach(producto => {
             template += `<tr class="text-center">
@@ -142,18 +134,17 @@
     }
 
     //evento de conexion principal
-    socket.on('connectionMessage',data=>{
-        actualizarTabla();
+    socket.on('connectionMessage',message=>{
+        console.log(message);
     });
 
     //evento para actualizar la tabla de productos
-    socket.on('updateProducto',()=>{
-        actualizarTabla();
+    socket.on('productosBack',productos=>{
+        actualizarTabla(productos);
     });
 
     //evento para actualizar los mensajes del chat
     socket.on('messageBack',mensajes=>{
-        console.log('messageBack');
         actualizarChat(mensajes);
     });
 

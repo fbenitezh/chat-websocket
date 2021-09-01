@@ -35,7 +35,9 @@ io.on("connection", async (socket) => {
   socket.emit("connectionMessage", "Conexión socket establecida con éxito");
   
   const msjs = await mensaje.getAll();
+  const prds = await contenedor.getAll();
   socket.emit("messageBack", msjs);
+  socket.emit("productosBack",prds);
 
   //evento para capturar una desconexion
   socket.on("disconnect", () => {
@@ -49,7 +51,8 @@ io.on("connection", async (socket) => {
       thumbnail: data.photo,
     };
     await contenedor.save(producto);
-    io.sockets.emit("updateProducto");
+    const prds = await contenedor.getAll();
+    io.sockets.emit("productosBack",prds);
   });
 
   socket.on("messageFront", async (data) => {
